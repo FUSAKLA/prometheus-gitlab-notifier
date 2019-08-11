@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus-gitlab-notifier
+spec:
+  selector:
+    matchLabels:
+      app: prometheus-gitlab-notifier
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: prometheus-gitlab-notifier
+    spec:
+      containers:
+        - name: prometheus-gitlab-notifier
+          image: fusakla/prometheus-gitlab-notifier:0.6.0
+          args:
+            - "--gitlab.url=https://gitlab.com/api/v4"
+            - "--project.id=13766104"
+            - "--issue.label=automated-alert-issue"
+            - "--group.interval=168h" # 7d
+            - "--issue.template=/prometheus-gitlab-notifier/issue-templates/issue.tmpl"
+            - "--gitlab.token.file=/prometheus-gitlab-notifier/secrets/gitlab_token"
+          readinessProbe:
+            httpGet:
+              port: 9288
+              path: /readiness
+          livenessProbe:
+            httpGet:
+              port: 9288
+              path: /liveness
+          ports:
+            - containerPort: 9288
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "50Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          volumeMounts:
+            - name: issue-template
+              readOnly: true
+              mountPath: "/prometheus-gitlab-notifier/issue-templates/"
+            - name: gitlab-token
+              readOnly: true
+              mountPath: "/prometheus-gitlab-notifier/secrets"
+      volumes:
+        - name: issue-template
+          configMap:
+            name: prometheus-gitlab-notifier-issue-template
+        - name: gitlab-token
+          secret:
+            secretName: prometheus-gitlab-notifier-gitlab-token

@@ -1,0 +1,9 @@
+route:
+  repeat_interval: 10000h
+  receiver: PrometheusGitlabNotifier
+
+  receivers:
+    - name: PrometheusGitlabNotifier
+      webhook_configs:
+        - send_resolved: false
+          url: http://0.0.0.0:9288/api/alertmanager
