@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- First public release
+
 ## [0.6.0] - 2019-07-17
 
 >**! Warning:** This release significantly changes logic of creating Gitlab issues and labeling scheme. 
