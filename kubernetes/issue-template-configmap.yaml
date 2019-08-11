@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-gitlab-notifier-issue-template
+data:
+  issue.tmpl: |
+    {{define "alert"}}
+      - **`{{ index .Annotations "description" }}`**
+        - **Starts at**: {{ .StartsAt }}
+        - **Ends at**: {{ .EndsAt }}
+        - **Generator URL**: [{{ .GeneratorURL }}]({{ .GeneratorURL }})
+        - **Labels**: `{{`{`}}{{ range $k,$v := .Labels }}{{$k}}="{{$v}}", {{end}}{{`}`}}`
+    {{end}}
+
+
+    # `{{ index .CommonLabels "severity" }}` alert `{{ index .CommonLabels "alertname" }}` occurred
+    **Title:** {{ index .CommonAnnotations "title" }}
+    **Alertmanager link:** [{{ .ExternalURL }}]({{ .ExternalURL }})
+
+    ### Common labels:
+    {{- range $k,$v := .CommonLabels }}
+      - **`{{ $k }}`**: `{{ $v }}`
+    {{- end }}
+
+    ### Common annotations:
+    {{- range $k,$v := .CommonAnnotations }}
+      {{- if and (not (eq $k "title")) (not (eq $k "description")) }}
+      - **`{{ $k }}`**: `{{ $v }}`
+      {{- end }}
+    {{- end }}
+
+    ---
+
+    ## Alerts
+    {{- range .Alerts }}
+      {{ template "alert" . }}
+    {{- end }}

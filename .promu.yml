@@ -1,0 +1,20 @@
+go:
+  # Whenever the Go version is updated here, .travis.yml and
+  # .circle/config.yml should also be updated.
+  version: 1.12
+repository:
+  path: github.com/fusakla/prometheus-gitlab-notifier
+build:
+  binaries:
+    - name: prometheus-gitlab-notifier
+      path: ./cmd/prometheus-gitlab-notifier
+  flags: -a -tags netgo
+  ldflags: |
+    -X github.com/fusakla/prometheus-gitlab-notifier/metrics.appVersion={{.Version}}
+    -X github.com/fusakla/prometheus-gitlab-notifier/metrics.gitRevision={{.Revision}}
+    -X github.com/fusakla/prometheus-gitlab-notifier/metrics.gitBranch={{.Branch}}
+    -X github.com/fusakla/prometheus-gitlab-notifier/metrics.gitTag={{.Version}}
+tarball:
+  files:
+    - LICENSE
+    - NOTICE
