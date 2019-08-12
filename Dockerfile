@@ -1,8 +1,9 @@
-ARG ARCH="amd64"
-ARG OS="linux"
 FROM quay.io/prometheus/busybox:latest
 LABEL maintainer="FUSAKLA Martin Chodúr <m.chodur@seznam.cz>"
 
+
+ARG ARCH="amd64"
+ARG OS="linux"
 COPY --chown=nobody:nogroup .build/${OS}-${ARCH}/prometheus-gitlab-notifier /bin/prometheus-gitlab-notifier
 COPY --chown=nobody:nogroup conf/default_issue.tmpl /prometheus-gitlab-notifier/conf/
 COPY --chown=nobody:nogroup Dockerfile /

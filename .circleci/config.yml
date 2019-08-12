@@ -15,7 +15,6 @@ executors:
 jobs:
   test:
     executor: golang
-
     steps:
     - prometheus/setup_environment
     - run: make
