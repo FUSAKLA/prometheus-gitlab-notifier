@@ -18,3 +18,8 @@ tarball:
   files:
     - LICENSE
     - NOTICE
+crossbuild:
+  platforms:
+    - linux/amd64
+    - darwin/amd64
+    - windows/amd64
