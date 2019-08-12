@@ -6,4 +6,4 @@ route:
     - name: PrometheusGitlabNotifier
       webhook_configs:
         - send_resolved: false
-          url: http://0.0.0.0:9288/api/alertmanager
+          url: http://0.0.0.0:9629/api/alertmanager

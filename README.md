@@ -15,7 +15,7 @@ Web server listening for webhooks of alertmanager and creating an issue in Gitla
 Flags:
   --help                         Show context-sensitive help (also try --help-long and --help-man).
   --debug                        Enables debug logging.
-  --server.addr="0.0.0.0:9288"   Allows to change the address and port at which the server will listen for incoming connections.
+  --server.addr="0.0.0.0:9629"   Allows to change the address and port at which the server will listen for incoming connections.
   --gitlab.url=GITLAB.URL        URL of the Gitlab API.
   --gitlab.token.file=GITLAB.TOKEN.FILE  
                                  Path to file containing gitlab token.
@@ -33,7 +33,7 @@ Flags:
                                  Duration how long to wait on graceful shutdown marked as not ready (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').
 ```
 
-To test it is running check logs or http://0.0.0.0:9288/readiness
+To test it is running check logs or http://0.0.0.0:9629/readiness
 
 ### Issue template
 Look of the resulting issue in Gitlab can be customized using [Go template]{https://golang.org/pkg/text/template/}.

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## Changed
+- **The used port has changed from `9288` to `9629`** to align with [the port allocation politics of Prometheus integrations](https://github.com/prometheus/prometheus/wiki/Default-port-allocations).
+
 ## [0.6.0] - 2019-07-17
 
 >**! Warning:** This release significantly changes logic of creating Gitlab issues and labeling scheme. 

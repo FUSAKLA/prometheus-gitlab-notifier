@@ -22,6 +22,39 @@ jobs:
     - prometheus/store_artifact:
         file: prometheus-gitlab-notifier
 
+  publish_master:
+    description: |
+      Build and publish container images from the master branch.
+    docker:
+    - image: circleci/golang
+    steps:
+    - prometheus/setup_build_environment
+    - prometheus/publish_images:
+        login_variable: DOCKER_LOGIN
+        organization: fusakla
+        password_variable: DOCKER_PASSWORD
+        registry: docker.io
+
+  publish_release:
+    description: Build and publish binaries and container images for a given release tag.
+    docker:
+    - image: circleci/golang
+    steps:
+    - prometheus/setup_build_environment
+    - run: promu crossbuild tarballs
+    - run: promu checksum .tarballs
+    - run: promu release .tarballs
+    - prometheus/store_artifacts:
+        destination: releases
+        path: .tarballs
+    - prometheus/publish_release_images:
+        login_variable: DOCKER_LOGIN
+        organization: fusakla
+        password_variable: DOCKER_PASSWORD
+        registry: docker.io
+
+
+
 workflows:
   version: 2
   prometheus-gitlab-notifier:
@@ -35,14 +68,14 @@ workflows:
         filters:
           tags:
             only: /.*/
-    - prometheus/publish_master:
+    - publish_master:
         requires:
         - test
         - build
         filters:
           branches:
             only: master
-    - prometheus/publish_release:
+    - publish_release:
         requires:
         - test
         - build

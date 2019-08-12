@@ -7,7 +7,7 @@ COPY --chown=nobody:nogroup .build/${OS}-${ARCH}/prometheus-gitlab-notifier /bin
 COPY --chown=nobody:nogroup conf/default_issue.tmpl /prometheus-gitlab-notifier/conf/
 COPY --chown=nobody:nogroup Dockerfile /
 
-EXPOSE 9288
+EXPOSE 9629
 RUN mkdir -p /prometheus-gitlab-notifier && chown nobody:nogroup /prometheus-gitlab-notifier
 WORKDIR /prometheus-gitlab-notifier
 

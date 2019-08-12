@@ -72,7 +72,7 @@ func startServer(logger log.Logger, r http.Handler) (*http.Server, <-chan error)
 	}
 	go func() {
 		defer close(errCh)
-		level.Info(logger).Log("msg", "Starting prometheus-gitlab-notifier", "addr", "0.0.0.0:9288")
+		level.Info(logger).Log("msg", "Starting prometheus-gitlab-notifier", "addr", "0.0.0.0:9629")
 		if err := srv.ListenAndServe(); err != nil {
 			if err != http.ErrServerClosed {
 				level.Error(logger).Log("msg", "server failed", "error", err)
@@ -86,7 +86,7 @@ func startServer(logger log.Logger, r http.Handler) (*http.Server, <-chan error)
 var (
 	app                  = kingpin.New("prometheus-gitlab-notifier", "Web server listening for webhooks of alertmanager and creating an issue in Gitlab based on it.")
 	debug                = app.Flag("debug", "Enables debug logging.").Bool()
-	serverAddr           = app.Flag("server.addr", "Allows to change the address and port at which the server will listen for incoming connections.").Default("0.0.0.0:9288").String()
+	serverAddr           = app.Flag("server.addr", "Allows to change the address and port at which the server will listen for incoming connections.").Default("0.0.0.0:9629").String()
 	gitlabURL            = app.Flag("gitlab.url", "URL of the Gitlab API.").Required().String()
 	gitlabTokenFile      = app.Flag("gitlab.token.file", "Path to file containing gitlab token.").Required().ExistingFile()
 	projectId            = app.Flag("project.id", "Id of project where to create the issues.").Required().Int()

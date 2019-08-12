@@ -24,14 +24,14 @@ spec:
             - "--gitlab.token.file=/prometheus-gitlab-notifier/secrets/gitlab_token"
           readinessProbe:
             httpGet:
-              port: 9288
+              port: 9629
               path: /readiness
           livenessProbe:
             httpGet:
-              port: 9288
+              port: 9629
               path: /liveness
           ports:
-            - containerPort: 9288
+            - containerPort: 9629
           resources:
             requests:
               cpu: "50m"
