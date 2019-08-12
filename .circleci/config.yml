@@ -44,7 +44,7 @@ jobs:
     - run: promu crossbuild tarballs
     - run: promu checksum .tarballs
     - run: promu release .tarballs
-    - prometheus/store_artifact:
+    - store_artifacts:
         destination: releases
         path: .tarballs
     - prometheus/publish_release_images:
@@ -66,6 +66,8 @@ workflows:
     - prometheus/build:
         name: build
         filters:
+          branches:
+            only: master
           tags:
             only: /.*/
     - publish_master:
