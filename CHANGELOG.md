@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.7.0] - 2019-08-13
+
 ## Changed
 - **The used port has changed from `9288` to `9629`** to align with [the port allocation politics of Prometheus integrations](https://github.com/prometheus/prometheus/wiki/Default-port-allocations).
 
