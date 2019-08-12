@@ -1,7 +1,14 @@
 # Prometheus Gitlab Notifier
 
+[![CircleCI](https://circleci.com/gh/FUSAKLA/prometheus-gitlab-notifier.svg?style=svg)](https://circleci.com/gh/FUSAKLA/prometheus-gitlab-notifier)
+
 Tool which implements [Alertmanager](https://github.com/prometheus/alertmanager) webhook notifier
-and creates Gitlab issue with the alert metadata.
+and creates Gitlab issue based on the the alert. It allows you to define own issue template using the Go template, labeling scheme
+of the resulting issue and group the alerts to a singe issue to avoid flooding yourself with identical issues.
+
+> This is probably possible in the Ultimate version of GitLab using
+> the [Prometheus integration](https://docs.gitlab.com/ee/user/project/integrations/prometheus.html#setting-up-alerts-for-prometheus-metrics-ultimate),
+> so if you have the possibility maybe first try that.
 
 For new features or changes check out the [CHANGELOG.md](./CHANGELOG.md)
 
@@ -87,6 +94,6 @@ Example kubernetes manifests can be found at [kubernetes/](./kubernetes)
 
 **Contributing:**
 1. Implement your changes and test them on your own testing repository.
-1. Add note about changes made to the [CHANGELOG.md](CHANGELOG.md) `[Unreleased]` section.
+1. Add note about changes made to the [CHANGELOG.md](CHANGELOG.md) `Unreleased` section.
 1. Create PR and apply for CR from maintainers.
 1. Get it merged.
