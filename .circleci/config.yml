@@ -66,6 +66,8 @@ workflows:
     - prometheus/build:
         name: build
         filters:
+          branches:
+            only: master
           tags:
             only: /.*/
     - publish_master:
