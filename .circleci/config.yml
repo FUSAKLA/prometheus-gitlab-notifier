@@ -44,7 +44,7 @@ jobs:
     - run: promu crossbuild tarballs
     - run: promu checksum .tarballs
     - run: promu release .tarballs
-    - prometheus/store_artifacts:
+    - prometheus/store_artifact:
         destination: releases
         path: .tarballs
     - prometheus/publish_release_images:
