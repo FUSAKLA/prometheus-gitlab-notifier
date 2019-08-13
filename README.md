@@ -1,6 +1,6 @@
 # Prometheus Gitlab Notifier
 
-[![CircleCI](https://circleci.com/gh/FUSAKLA/prometheus-gitlab-notifier.svg?style=svg)](https://circleci.com/gh/FUSAKLA/prometheus-gitlab-notifier)
+[![CircleCI](https://circleci.com/gh/FUSAKLA/prometheus-gitlab-notifier.svg?style=svg)](https://circleci.com/gh/FUSAKLA/prometheus-gitlab-notifier) [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/fusakla/prometheus-gitlab-notifier?label=latest%20version)](CHANGELOG.md) [![Docker Pulls](https://img.shields.io/docker/pulls/fusakla/prometheus-gitlab-notifier)](https://cloud.docker.com/repository/docker/fusakla/prometheus-gitlab-notifier)
 
 Tool which implements [Alertmanager](https://github.com/prometheus/alertmanager) webhook notifier
 and creates Gitlab issue based on the the alert. It allows you to define own issue template using the Go template, labeling scheme
