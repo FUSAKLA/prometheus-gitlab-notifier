@@ -45,7 +45,7 @@ Flags:
 To test it is running check logs or http://0.0.0.0:9629/readiness
 
 ### Issue template
-Look of the resulting issue in Gitlab can be customized using [Go template]{https://golang.org/pkg/text/template/}.
+Look of the resulting issue in Gitlab can be customized using [Go template](https://golang.org/pkg/text/template/).
 Default template can be found in [conf/default_issue.tmpl](conf/default_issue.tmpl).
 The available data during templating is the Alertmanager webhook message struct itself.
 Example can be found in [conf/alert.json](conf/alert.json).
@@ -60,7 +60,7 @@ Example of the default template:
 ### Configure Alertmanager
 You just need to add the [`<webhook_config>`](https://prometheus.io/docs/alerting/configuration/#webhook_config)
 receiver to your Alertmanager configuration and disable sending resolved notifications with `send_resolved: false`.
-Also better to set the `repeat_interval` to higher value since every retry will create new issue.
+Also better to set the `repeat_interval` to higher value.
 
 See the minimal example in the [conf/alertmanager_conf.yaml](conf/alertmanager_conf.yaml).
 
