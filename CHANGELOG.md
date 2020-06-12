@@ -1,5 +1,7 @@
 
 ## Unreleased
+### Changed
+- prometheus and alertmanager dependency versions
 
 ## 0.7.0 / 2019-08-13
 
