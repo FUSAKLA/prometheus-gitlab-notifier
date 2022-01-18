@@ -1,6 +1,10 @@
 
 ## Unreleased
 
+## 1.1.0 / 2022-01-18
+### Changed
+- upgraded the `github.com/miekg/dns` due to [CVE-2019-19794](https://github.com/advisories/GHSA-44r7-7p62-q3fr)
+
 ## 1.0.0 / 2022-01-18
 
 ### Fixed
