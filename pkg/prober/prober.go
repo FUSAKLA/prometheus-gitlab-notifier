@@ -18,13 +18,12 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
-// NewInRouter returns new Prober which registers it's endpoints in the Router to provide readiness and liveness endpoints.
-func NewInRouter(logger log.Logger, router *mux.Router) *prober {
+// NewInRouter returns new Prober which registers its endpoints in the Router to provide readiness and liveness endpoints.
+func NewInRouter(logger log.FieldLogger, router *mux.Router) *prober {
 	p := &prober{
 		logger:      logger,
 		serverReady: nil,
@@ -35,7 +34,7 @@ func NewInRouter(logger log.Logger, router *mux.Router) *prober {
 
 // prober holds application readiness/liveness status and provides handlers for reporting it.
 type prober struct {
-	logger         log.Logger
+	logger         log.FieldLogger
 	serverReadyMtx sync.RWMutex
 	serverReady    error
 }
@@ -51,7 +50,7 @@ func (p *prober) livenessHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *prober) writeFailedReadiness(w http.ResponseWriter, err error) {
-	level.Error(p.logger).Log("msg", "readiness probe failed", "err", err)
+	p.logger.WithField("err", err).Error("readiness probe failed")
 	http.Error(w, err.Error(), http.StatusServiceUnavailable)
 }
 
@@ -68,7 +67,7 @@ func (p *prober) readinessHandler(w http.ResponseWriter, r *http.Request) {
 func (p *prober) SetServerNotReady(err error) {
 	p.serverReadyMtx.Lock()
 	defer p.serverReadyMtx.Unlock()
-	level.Warn(p.logger).Log("msg", "Marking server as not ready", "reason", err)
+	p.logger.WithField("reason", err).Warn("Marking server as not ready")
 	p.serverReady = err
 }
 

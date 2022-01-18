@@ -26,16 +26,15 @@ import (
 
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/alertmanager"
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/metrics"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
+	log "github.com/sirupsen/logrus"
 	"github.com/xanzy/go-gitlab"
 )
 
 // New creates new Gitlab instance configured to work with specified gitlab instance, project and with given authentication.
-func New(logger log.Logger, url string, token string, projectId int, issueTemplate *template.Template, issueLabels *[]string, dynamicIssueLabels *[]string, groupInterval *time.Duration) (*Gitlab, error) {
+func New(logger log.FieldLogger, url string, token string, projectId int, issueTemplate *template.Template, issueLabels *[]string, dynamicIssueLabels *[]string, groupInterval *time.Duration) (*Gitlab, error) {
 	cli := gitlab.NewClient(nil, token)
 	if err := cli.SetBaseURL(url); err != nil {
-		level.Error(logger).Log("msg", "invalid Gitlab URL", "url", url, "err", "err")
+		logger.WithFields(log.Fields{"url": url, "err": "err"}).Error("invalid Gitlab URL")
 		return nil, err
 	}
 	g := &Gitlab{
@@ -48,7 +47,7 @@ func New(logger log.Logger, url string, token string, projectId int, issueTempla
 		logger:             logger,
 	}
 	if err := g.ping(); err != nil {
-		level.Error(logger).Log("msg", "cannot reach the Gitlab", "url", url, "err", "err")
+		logger.WithFields(log.Fields{"url": url, "err": err}).Error("msg", "cannot reach the Gitlab")
 		return nil, err
 	}
 	return g, nil
@@ -62,7 +61,7 @@ type Gitlab struct {
 	issueLabels        *[]string
 	dynamicIssueLabels *[]string
 	groupInterval      *time.Duration
-	logger             log.Logger
+	logger             log.FieldLogger
 }
 
 func (g *Gitlab) formatGitlabScopedLabel(key string, value string) string {
@@ -99,14 +98,34 @@ func (g *Gitlab) renderIssueTemplate(msg *alertmanager.Webhook) (*bytes.Buffer, 
 	var issueText bytes.Buffer
 	// Try to template the issue text template with the alert data.
 	if err := g.issueTemplate.Execute(&issueText, msg.Data); err != nil {
-		// As a fallback we try to add raw JSON of the alert to the issue text so we don't miss an alert just because of template error.
+		// As a fallback we try to add raw JSON of the alert to the issue text, so we don't miss an alert just because of template error.
 		metrics.ReportError("IssueTemplateError", "")
-		level.Error(g.logger).Log("msg", "failed to template issue text, using pure JSON instead", "err", err)
+		g.logger.WithFields(log.Fields{"err": err}).Error("failed to template issue text, using pure JSON instead")
 		w := bufio.NewWriter(&issueText)
-		if err := json.NewEncoder(w).Encode(msg); err != nil {
+		_, err := w.WriteString("\n```json\n")
+		if err != nil {
+			metrics.ReportError("JSONWriteError", "")
+			g.logger.WithFields(log.Fields{"err": err}).Error("failed to write the alert to JSON")
+			return nil, err
+		}
+		e := json.NewEncoder(w)
+		e.SetIndent("", "    ")
+		if err := e.Encode(msg); err != nil {
 			// If even JSON marshalling fails we return error
 			metrics.ReportError("JSONMarshalError", "")
-			level.Error(g.logger).Log("msg", "failed to marshall alert to JSON", "err", err)
+			g.logger.WithFields(log.Fields{"err": err}).Error("failed to marshall alert to JSON")
+			return nil, err
+		}
+		_, err = w.WriteString("\n```\n")
+		if err != nil {
+			metrics.ReportError("JSONWriteError", "")
+			g.logger.WithFields(log.Fields{"err": err}).Error("failed to write the alert to JSON")
+			return nil, err
+		}
+		err = w.Flush()
+		if err != nil {
+			metrics.ReportError("JSONWriteError", "")
+			g.logger.WithFields(log.Fields{"err": err}).Error("failed to write the alert to JSON")
 			return nil, err
 		}
 	}
@@ -127,7 +146,7 @@ func (g *Gitlab) getOpenIssuesSince(groupingLabels []string, sinceTime time.Time
 	issues, response, err := g.client.Issues.ListIssues(&listOpts)
 	if err != nil {
 		metrics.ReportError("ListGitlabIssuesError", "gitlab")
-		level.Error(g.logger).Log("msg", "failed to list gitlab issues with", "opts", listOpts, "response", response, "err", err)
+		g.logger.WithFields(log.Fields{"opts": listOpts, "response": response, "err": err}).Error("failed to list gitlab issues with")
 		return []*gitlab.Issue{}, err
 	}
 	return issues, nil
@@ -151,10 +170,10 @@ func (g *Gitlab) createGitlabIssue(msg *alertmanager.Webhook, groupingLabels []s
 	createdIssue, response, err := g.client.Issues.CreateIssue(g.projectId, options)
 	if err != nil {
 		metrics.ReportError("FailedToCreateGitlabIssue", "gitlab")
-		level.Error(g.logger).Log("msg", "failed to create gitlab issue", "err", err, "response", response)
+		g.logger.WithFields(log.Fields{"err": err, "response": response}).Error("failed to create gitlab issue")
 		return err
 	}
-	level.Info(g.logger).Log("msg", "created issue in gitlab", "gitlab_issue_id", createdIssue.IID, "alert_grouping_key", msg.GroupKey)
+	g.logger.WithFields(log.Fields{"gitlab_issue_id": createdIssue.IID, "alert_grouping_key": msg.GroupKey}).Info("created issue in gitlab")
 	return nil
 }
 
@@ -171,7 +190,7 @@ func (g *Gitlab) increaseAppendLabel(labels []string) []string {
 			// Convert it to number if possible otherwise leave the old one as is
 			count, err := strconv.Atoi(matched[2])
 			if err != nil {
-				level.Error(g.logger).Log("msg", "failed to parse gitlab issue label `appended-alerts`, leaving it unmodified", "label_value", l, "err", err)
+				g.logger.WithFields(log.Fields{"err": err, "label_value": l}).Error("failed to parse gitlab issue label `appended-alerts`, leaving it unmodified")
 				newLabels = append(newLabels, l)
 				continue
 			}
@@ -197,10 +216,10 @@ func (g *Gitlab) updateGitlabIssue(issue *gitlab.Issue, issueText *bytes.Buffer)
 	issue, response, err := g.client.Issues.UpdateIssue(g.projectId, issue.IID, options)
 	if err != nil {
 		metrics.ReportError("FailedToUpdateGitlabIssue", "gitlab")
-		level.Error(g.logger).Log("msg", "failed to update gitlab issue, will try to create new", "err", err, "response", response)
+		g.logger.WithFields(log.Fields{"err": err, "response": response}).Error("failed to update gitlab issue, will try to create new")
 		return err
 	}
-	level.Info(g.logger).Log("msg", "updated issue in gitlab", "gitlab_issue_id", issue.IID)
+	g.logger.WithFields(log.Fields{"gitlab_issue_id": issue.IID}).Info("updated issue in gitlab")
 	return nil
 }
 
@@ -212,7 +231,7 @@ func (g *Gitlab) CreateIssue(msg *alertmanager.Webhook) error {
 	// Check for existing issues with same grouping labels
 	matchingIssues, err := g.getOpenIssuesSince(groupingLabels, g.getTimeBefore(g.groupInterval))
 	if err != nil {
-		level.Warn(g.logger).Log("msg", "listing of open issues to check for duplicates failed , opening a new one even though possible duplicate")
+		g.logger.Warn("listing of open issues to check for duplicates failed , opening a new one even though possible duplicate")
 	}
 
 	// Try to render the issue text template
@@ -225,7 +244,7 @@ func (g *Gitlab) CreateIssue(msg *alertmanager.Webhook) error {
 		// Issues are ordered by created date, we update the first so the newest one.
 		issueToUpdate := matchingIssues[0]
 		if err := g.updateGitlabIssue(issueToUpdate, issueText); err != nil {
-			level.Warn(g.logger).Log("msg", "updating an existing issue failed, opening a new one", "updated_issue_id", issueToUpdate.IID)
+			g.logger.WithField("updated_issue_id", issueToUpdate.IID).Warn("updating an existing issue failed, opening a new one")
 		} else {
 			return nil
 		}
@@ -238,11 +257,11 @@ func (g *Gitlab) CreateIssue(msg *alertmanager.Webhook) error {
 }
 
 func (g *Gitlab) ping() error {
-	level.Debug(g.logger).Log("msg", "trying to ping gitlab", "url", g.client.BaseURL())
+	g.logger.WithField("url", g.client.BaseURL()).Debug("trying to ping gitlab")
 	_, err := http.Head(g.client.BaseURL().String())
 	if err != nil {
 		metrics.ReportError("FailedToPingGitlab", "gitlab")
-		level.Error(g.logger).Log("msg", "failed to ping gitlab with HEAD request", "err", err)
+		g.logger.WithField("err", err).Error("failed to ping gitlab with HEAD request")
 		return err
 	}
 	return nil

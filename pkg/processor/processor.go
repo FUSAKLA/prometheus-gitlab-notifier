@@ -19,9 +19,8 @@ import (
 
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/alertmanager"
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/gitlab"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -41,14 +40,14 @@ func init() {
 }
 
 // New returns new processor which handles the alert queue and retrying.
-func New(logger log.Logger) *processor {
+func New(logger log.FieldLogger) *processor {
 	return &processor{
 		logger: logger,
 	}
 }
 
 type processor struct {
-	logger log.Logger
+	logger log.FieldLogger
 }
 
 // Process processes alerts from the given channel and creates Gitlab issues from them.
@@ -64,10 +63,10 @@ func (p *processor) Process(ctx context.Context, gitlab *gitlab.Gitlab, alertCha
 				if !ok {
 					return
 				}
-				level.Debug(p.logger).Log("msg", "fetched alert from queue for processing", "group_key", alert.GroupKey)
+				p.logger.WithField("group_key", alert.GroupKey).Debug("fetched alert from queue for processing")
 				if err := gitlab.CreateIssue(alert); err != nil {
 					if alert.RetryCount() >= retryLimit-1 {
-						level.Warn(p.logger).Log("msg", "alert exceeded maximum number of retries, dropping it", "group_key", alert.GroupKey, "retry_count", retryLimit)
+						p.logger.WithFields(log.Fields{"group_key": alert.GroupKey, "retry_count": retryLimit}).Warn("alert exceeded maximum number of retries, dropping it")
 						continue
 					}
 					go func() {
@@ -75,7 +74,7 @@ func (p *processor) Process(ctx context.Context, gitlab *gitlab.Gitlab, alertCha
 						alert.Retry()
 						alertChannel <- alert
 						retryCount.Inc()
-						level.Warn(p.logger).Log("msg", "added alert to queue for retrying ", "group_key", alert.GroupKey, "retry_backoff", retryBackoff)
+						p.logger.WithFields(log.Fields{"group_key": alert.GroupKey, "retry_backoff": retryBackoff}).Warn("added alert to queue for retrying ")
 					}()
 				}
 				processedItems.Inc()

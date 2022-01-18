@@ -19,9 +19,8 @@ import (
 	"time"
 
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/metrics"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -56,13 +55,13 @@ func (w *instrumentedWriter) Write(b []byte) (int, error) {
 }
 
 // Instrumented returns instrumented handler which provides access logging and prometheus metrics for incoming requests.
-func Instrumented(logger log.Logger, handler http.Handler) http.HandlerFunc {
+func Instrumented(logger log.FieldLogger, handler http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		sw := instrumentedWriter{ResponseWriter: w}
 		handler.ServeHTTP(&sw, r)
 		duration := time.Since(start)
-		level.Info(logger).Log("msg", "access log", "uri", r.RequestURI, "method", r.Method, "status", sw.status, "remote_addr", r.RemoteAddr, "duration", duration)
+		logger.WithFields(log.Fields{"uri": r.RequestURI, "method": r.Method, "status": sw.status, "remote_addr": r.RemoteAddr, "duration": duration}).Info("served request")
 		metricsEndpoint := r.URL.Path
 		if sw.status == 404 {
 			metricsEndpoint = "non-existing-endpoint"

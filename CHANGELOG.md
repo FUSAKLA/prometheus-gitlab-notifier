@@ -1,7 +1,22 @@
 
 ## Unreleased
+
+## 1.0.0 / 2022-01-18
+
+### Fixed
+- Fixed alert template loading
+
+### Added
+- support for templating functions from [the sprig library](https://github.com/Masterminds/sprig)
+- default value for the gitlab.url flag pointing to `https://gtilab.com`
+- new flag `--log.json` to enable JSON logging
+
 ### Changed
 - prometheus and alertmanager dependency versions
+- Upgraded to Go 1.17
+- Migrated to goreleaser
+- Switched to logrus library, default log format has changed
+- Default issue template is now embedded in the binary
 
 ## 0.7.0 / 2019-08-13
 

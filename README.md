@@ -44,6 +44,12 @@ Flags:
 
 To test it is running check logs or http://0.0.0.0:9629/readiness
 
+### Try it out
+You can send a test alert to it using the prepared alert JSON by running thin in root of this repo
+```bash
+curl -X POST -H "Content-Type: application/json" -d @./conf/alert.json http://localhost:9629/api/alertmanager
+```
+
 ### Issue template
 Look of the resulting issue in Gitlab can be customized using [Go template](https://golang.org/pkg/text/template/).
 Default template can be found in [conf/default_issue.tmpl](conf/default_issue.tmpl).
@@ -55,7 +61,7 @@ fails in the runtime, raw JSON of the alert will be pasted to the text of the is
 
 Example of the default template:
 
-![Issue axample](conf/issue_example.png)
+![Issue example](conf/issue_example.png)
 
 ### Configure Alertmanager
 You just need to add the [`<webhook_config>`](https://prometheus.io/docs/alerting/configuration/#webhook_config)
@@ -70,14 +76,14 @@ The Gitlab notifier allows to label the resulting issue based on the alert label
 It uses mostly Gitlab scoped labels in format `label::value`.
 The grouping labels of the alert are added to the issue automatically to allow identifying same 
 alerts (more on that in [Grouping](#Grouping) section).
-Additionally you can specify names of labels to be also added to the issue using flag `--dynamic.issue.label.name`.
+Additionally, you can specify names of labels to be also added to the issue using flag `--dynamic.issue.label.name`.
 Last thing you can add are static labels which will be added to every issue using flag `--issue.label`,
 
 
 ### Grouping
 To avoid flooding gitlab with identical alerts if they happen to fire and resolve again and again, 
 Gitlab notifier checks for issues witch the same grouping labels as the new incoming alert.
-If if finds any still open issue younger than `1h` by default (can be controlled by flag `--group.interval`),
+If if it finds any still open issue younger than `1h` by default (can be controlled by flag `--group.interval`),
 it only appends the rendered template to the end of the issue description 
 and adds to the issue label `appended-alerts::<number>` witch count of how many times it was updated. 
 

@@ -22,14 +22,13 @@ import (
 
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/alertmanager"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/alertmanager/notify/webhook"
+	log "github.com/sirupsen/logrus"
 )
 
 // NewInRouter creates new Api instance which will register it's handlers in the given router.
-func NewInRouter(logger log.Logger, r *mux.Router, ch chan<- *alertmanager.Webhook) *Api {
+func NewInRouter(logger log.FieldLogger, r *mux.Router, ch chan<- *alertmanager.Webhook) *Api {
 	api := &Api{
 		logger:        logger,
 		alertChan:     ch,
@@ -41,7 +40,7 @@ func NewInRouter(logger log.Logger, r *mux.Router, ch chan<- *alertmanager.Webho
 
 // Api defines handler functions for receiving Alertmanager endpoints.
 type Api struct {
-	logger           log.Logger
+	logger           log.FieldLogger
 	alertChan        chan<- *alertmanager.Webhook
 	receiveAlerts    bool
 	receiveAlertsMtx sync.RWMutex
@@ -65,7 +64,7 @@ func (a *Api) webhookHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Push the message to channel
 	a.alertChan <- alertmanager.NewWebhookFromAlertmanagerMessage(message)
-	level.Debug(a.logger).Log("msg", "enqueued alert for processing", "group_key", message.GroupKey)
+	a.logger.WithField("group_key", message.GroupKey).Debug("enqueued alert for processing")
 
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.WriteString(w, `Ok, Alert enqueued.`)

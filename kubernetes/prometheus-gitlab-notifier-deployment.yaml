@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: prometheus-gitlab-notifier
-          image: fusakla/prometheus-gitlab-notifier:0.6.0
+          image: fusakla/prometheus-gitlab-notifier:latest
           args:
             - "--gitlab.url=https://gitlab.com/api/v4"
             - "--project.id=13766104"

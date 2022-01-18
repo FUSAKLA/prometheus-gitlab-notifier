@@ -13,10 +13,11 @@
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 .build
+dist/
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
 /conf/*.token
-/prometheus-gitlab-notifier
+/prometheus-gitlab-notifier/cmd/prometheus-gitlab-notifier
 

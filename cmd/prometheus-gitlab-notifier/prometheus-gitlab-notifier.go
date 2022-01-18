@@ -15,6 +15,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig"
 	"github.com/alecthomas/kingpin"
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/alertmanager"
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/api"
@@ -32,37 +34,37 @@ import (
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/metrics"
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/prober"
 	"github.com/fusakla/prometheus-gitlab-notifier/pkg/processor"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
-func setupLogger(debug bool) log.Logger {
-	l := log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))
-	l = log.With(l, "ts", log.DefaultTimestamp, "caller", log.DefaultCaller)
+func setupLogger(debug bool, logJson bool) log.FieldLogger {
+	l := log.New()
+	l.SetOutput(os.Stdout)
+	if logJson {
+		l.SetFormatter(&log.JSONFormatter{})
+	}
 	if debug {
-		l = level.NewFilter(l, level.AllowDebug())
-	} else {
-		l = level.NewFilter(l, level.AllowInfo())
+		l.SetLevel(log.DebugLevel)
 	}
 	return l
 }
 
-func waitForEmptyChannel(logger log.Logger, ch <-chan *alertmanager.Webhook) {
-	level.Info(logger).Log("msg", "waiting for all the alerts to be processed")
+func waitForEmptyChannel(logger log.FieldLogger, ch <-chan *alertmanager.Webhook) {
+	logger.Info("waiting for all the alerts to be processed")
 	for {
 		if len(ch) > 0 {
-			level.Info(logger).Log("msg", "there are still alerts in the queue, waiting forthem to be processed", "queue_size", len(ch))
+			logger.WithField("queue_size", len(ch)).Info("there are still alerts in the queue, waiting for them to be processed")
 			time.Sleep(10 * time.Millisecond)
 			continue
 		}
 		break
 	}
-	level.Info(logger).Log("msg", "processing of the rest of alerts is done")
+	logger.Info("processing of the rest of alerts is done")
 }
 
-func startServer(logger log.Logger, r http.Handler) (*http.Server, <-chan error) {
+func startServer(logger log.FieldLogger, r http.Handler) (*http.Server, <-chan error) {
 	errCh := make(chan error, 1)
 	srv := &http.Server{
 		Handler:      handler.Instrumented(logger, r),
@@ -72,10 +74,10 @@ func startServer(logger log.Logger, r http.Handler) (*http.Server, <-chan error)
 	}
 	go func() {
 		defer close(errCh)
-		level.Info(logger).Log("msg", "Starting prometheus-gitlab-notifier", "addr", "0.0.0.0:9629")
+		logger.WithField("addr", "0.0.0.0:9629").Info("Starting prometheus-gitlab-notifier")
 		if err := srv.ListenAndServe(); err != nil {
 			if err != http.ErrServerClosed {
-				level.Error(logger).Log("msg", "server failed", "error", err)
+				logger.WithField("err", err).Error("server failed")
 				errCh <- err
 			}
 		}
@@ -86,40 +88,55 @@ func startServer(logger log.Logger, r http.Handler) (*http.Server, <-chan error)
 var (
 	app                  = kingpin.New("prometheus-gitlab-notifier", "Web server listening for webhooks of alertmanager and creating an issue in Gitlab based on it.")
 	debug                = app.Flag("debug", "Enables debug logging.").Bool()
+	logJson              = app.Flag("log.json", "Log in JSON format").Bool()
 	serverAddr           = app.Flag("server.addr", "Allows to change the address and port at which the server will listen for incoming connections.").Default("0.0.0.0:9629").String()
-	gitlabURL            = app.Flag("gitlab.url", "URL of the Gitlab API.").Required().String()
+	gitlabURL            = app.Flag("gitlab.url", "URL of the Gitlab API.").Default("https://gitlab.com").String()
 	gitlabTokenFile      = app.Flag("gitlab.token.file", "Path to file containing gitlab token.").Required().ExistingFile()
 	projectId            = app.Flag("project.id", "Id of project where to create the issues.").Required().Int()
 	groupInterval        = app.Flag("group.interval", "Duration how long back to check for opened issues with the same group labels to append the new alerts to (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').").Default("1h").Duration()
 	issueLabels          = app.Flag("issue.label", "Labels to add to the created issue. (Can be passed multiple times)").Strings()
 	dynamicIssueLabels   = app.Flag("dynamic.issue.label.name", "Alert label, which is to be propagated to the resulting Gitlab issue as scoped label if present in the received alert. (Can be passed multiple times)").Strings()
-	issueTemplatePath    = app.Flag("issue.template", "Path to the issue golang template file.").Default("conf/default_issue.tmpl").ExistingFile()
+	issueTemplatePath    = app.Flag("issue.template", "Path to the issue golang template file.").ExistingFile()
 	queueSizeLimit       = app.Flag("queue.size.limit", "Limit of the alert queue size.").Default("100").Int()
 	retryBackoff         = app.Flag("retry.backoff", "Duration how long to wait till next retry (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').").Default("5m").Duration()
 	retryLimit           = app.Flag("retry.limit", "Maximum number of retries for single alert. If exceeded it's thrown away.").Default("5").Int()
 	gracefulShutdownWait = app.Flag("graceful.shutdown.wait.duration", "Duration how long to wait on graceful shutdown marked as not ready (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').").Default("30s").Duration()
 )
 
-func main() {
+//go:embed default_issue.tmpl
+var defaultIssueTemplate []byte
 
+func main() {
+	var err error
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	// Initiate logging.
-	logger := setupLogger(*debug)
+	logger := setupLogger(*debug, *logJson)
+
+	tpl := template.New("base").Funcs(template.FuncMap(sprig.FuncMap()))
+
+	templateContents := defaultIssueTemplate
+	if *issueTemplatePath != "" {
+		templateContents, err = os.ReadFile(*issueTemplatePath)
+		if err != nil {
+			logger.WithFields(log.Fields{"err": err, "file": issueTemplatePath}).Error("failed to read template file")
+			os.Exit(1)
+		}
+	}
 
 	// Initiate Gitlab client.
-	gitlabIssueTextTemplate, err := template.ParseFiles(*issueTemplatePath)
+	gitlabIssueTextTemplate, err := tpl.Parse(string(templateContents))
 	if err != nil {
-		level.Error(logger).Log("msg", "invalid gitlab issue template", "file", *issueTemplatePath, "err", err)
+		logger.WithFields(log.Fields{"err": err, "file": issueTemplatePath}).Error("invalid gitlab issue template")
 		os.Exit(1)
 	}
 	token, err := ioutil.ReadFile(*gitlabTokenFile)
 	if err != nil {
-		level.Error(logger).Log("msg", "failed to read token file", "file", gitlabTokenFile, "err", err)
+		logger.WithFields(log.Fields{"err": err, "file": gitlabTokenFile}).Error("failed to read token file")
 		os.Exit(1)
 	}
 	g, err := gitlab.New(
-		log.With(logger, "component", "gitlab"),
+		logger.WithField("component", "gitlab"),
 		*gitlabURL,
 		strings.TrimSpace(string(token)),
 		*projectId,
@@ -129,13 +146,13 @@ func main() {
 		groupInterval,
 	)
 	if err != nil {
-		level.Error(logger).Log("msg", "invalid gitlab configuration")
+		logger.WithField("err", err).Error("invalid gitlab configuration")
 		os.Exit(1)
 	}
 
 	// Start processing all incoming alerts.
 	alertChan := make(chan *alertmanager.Webhook, *queueSizeLimit)
-	proc := processor.New(log.With(logger, "component", "processor"))
+	proc := processor.New(logger.WithField("component", "processor"))
 	processCtx, processCancelFunc := context.WithCancel(context.Background())
 	defer processCancelFunc()
 	proc.Process(processCtx, g, alertChan, *retryLimit, *retryBackoff)
@@ -144,20 +161,20 @@ func main() {
 	r := mux.NewRouter()
 	// Initialize the main API.
 	webhookApi := api.NewInRouter(
-		log.With(logger, "component", "api"),
+		logger.WithField("component", "api"),
 		r.PathPrefix("/api").Subrouter(),
 		alertChan,
 	)
 	// Initialize prober providing readiness and liveness checks.
 	readinessProber := prober.NewInRouter(
-		log.With(logger, "component", "prober"),
+		logger.WithField("component", "prober"),
 		r.PathPrefix("/").Subrouter(),
 	)
 	// Initialize metrics handler to serve Prometheus metrics.
 	metrics.HandleInRouter(r)
 
 	// Start HTTP server
-	_, serverErrorChan := startServer(log.With(logger, "component", "server"), r)
+	_, serverErrorChan := startServer(logger.WithField("component", "server"), r)
 
 	// Subscribe to system signals so we can react on them with graceful termination.
 	gracefulStop := make(chan os.Signal, 2)
@@ -172,11 +189,11 @@ func main() {
 			waitForEmptyChannel(logger, alertChan)
 			os.Exit(1)
 		case sig := <-gracefulStop:
-			level.Info(logger).Log("msg", "received system signal for graceful shutdown", "signal", sig)
+			logger.WithField("signal", sig).Info("received system signal for graceful shutdown")
 			// Mark server as not ready so no new connections will come.
 			readinessProber.SetServerNotReady(errors.New("server is shutting down"))
 			// Wait for specified time after marking server not ready so the environment can react on it.
-			level.Info(logger).Log("msg", "waiting for graceful shutdown", "duration", gracefulShutdownWait)
+			logger.WithField("duration", gracefulShutdownWait).Info("waiting for graceful shutdown")
 			time.Sleep(*gracefulShutdownWait)
 			// Stop receiving new alerts.
 			webhookApi.Close()
