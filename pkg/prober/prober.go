@@ -44,7 +44,7 @@ func (p *Prober) registerInRouter(router *mux.Router) {
 	router.HandleFunc("/readiness", p.readinessHandler)
 }
 
-func (p *Prober) livenessHandler(w http.ResponseWriter, r *http.Request) {
+func (p *Prober) livenessHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.WriteString(w, `OK`)
 }
@@ -54,7 +54,7 @@ func (p *Prober) writeFailedReadiness(w http.ResponseWriter, err error) {
 	http.Error(w, err.Error(), http.StatusServiceUnavailable)
 }
 
-func (p *Prober) readinessHandler(w http.ResponseWriter, r *http.Request) {
+func (p *Prober) readinessHandler(w http.ResponseWriter, _ *http.Request) {
 	if err := p.isReady(); err != nil {
 		p.writeFailedReadiness(w, err)
 		return

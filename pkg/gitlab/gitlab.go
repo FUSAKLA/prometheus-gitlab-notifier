@@ -252,10 +252,7 @@ func (g *Gitlab) CreateIssue(msg *alertmanager.Webhook) error {
 		}
 	}
 	// Try to create a new issue rather than discarding it after failed update.
-	if err := g.createGitlabIssue(msg, groupingLabels, issueText); err != nil {
-		return err
-	}
-	return nil
+	return g.createGitlabIssue(msg, groupingLabels, issueText)
 }
 
 func (g *Gitlab) ping() error {
