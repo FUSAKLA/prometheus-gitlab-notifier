@@ -1,6 +1,10 @@
 
 ## Unreleased
 
+## 1.2.0 / 2023-04-28
+### Changed
+- Upgraded all dependencies
+
 ## 1.1.0 / 2022-01-18
 ### Changed
 - upgraded the `github.com/miekg/dns` due to [CVE-2019-19794](https://github.com/advisories/GHSA-44r7-7p62-q3fr)
@@ -29,18 +33,18 @@
 
 ## 0.6.0 / 2019-07-17
 
->**! Warning:** This release significantly changes logic of creating Gitlab issues and labeling scheme. 
-Please read more about the new grouping feature.  
+>**! Warning:** This release significantly changes logic of creating Gitlab issues and labeling scheme.
+Please read more about the new grouping feature.
 
 ### Changed
 - Dynamic labels are now added as scoped labels to the issues in form `label::value`
-- To every issue the group- To every issue the grouping labels are added as scoped labels same way as dynamic labels. 
-ing labels are added as scoped labels same way as dynamic labels. 
+- To every issue the group- To every issue the grouping labels are added as scoped labels same way as dynamic labels.
+ing labels are added as scoped labels same way as dynamic labels.
 
 ### Added
-- If alert comes and opened issue with the same group labels is present in the Gitlab, 
+- If alert comes and opened issue with the same group labels is present in the Gitlab,
 the rendered template is just appended to this already existing issue instead of creating a new one.
-This applies only for issues younger than by default `1h` which can be controlled by new flag `--group.interval`. 
+This applies only for issues younger than by default `1h` which can be controlled by new flag `--group.interval`.
 Every appended issue gets new scoped label `appended-alerts::<numer>` with number of times it was appended.
 - Readme notes about contributing and release.
 

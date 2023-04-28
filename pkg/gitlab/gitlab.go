@@ -32,9 +32,9 @@ import (
 
 // New creates new Gitlab instance configured to work with specified gitlab instance, project and with given authentication.
 func New(logger log.FieldLogger, url string, token string, projectId int, issueTemplate *template.Template, issueLabels *[]string, dynamicIssueLabels *[]string, groupInterval *time.Duration) (*Gitlab, error) {
-	cli := gitlab.NewClient(nil, token)
-	if err := cli.SetBaseURL(url); err != nil {
-		logger.WithFields(log.Fields{"url": url, "err": "err"}).Error("invalid Gitlab URL")
+	cli, err := gitlab.NewClient(token, gitlab.WithBaseURL(url))
+	if err != nil {
+		logger.WithFields(log.Fields{"err": err}).Error("failed to create Gitlab client")
 		return nil, err
 	}
 	g := &Gitlab{
@@ -133,11 +133,12 @@ func (g *Gitlab) renderIssueTemplate(msg *alertmanager.Webhook) (*bytes.Buffer, 
 }
 
 func (g *Gitlab) getOpenIssuesSince(groupingLabels []string, sinceTime time.Time) ([]*gitlab.Issue, error) {
+	glLabels := gitlab.Labels(groupingLabels)
 	openState := "opened"
 	scope := "created_by_me"
 	orderBy := "created_at"
 	listOpts := gitlab.ListIssuesOptions{
-		Labels:       groupingLabels,
+		Labels:       &glLabels,
 		CreatedAfter: &sinceTime,
 		State:        &openState,
 		Scope:        &scope,
@@ -158,13 +159,14 @@ func (g *Gitlab) getTimeBefore(before *time.Duration) time.Time {
 
 func (g *Gitlab) createGitlabIssue(msg *alertmanager.Webhook, groupingLabels []string, issueText *bytes.Buffer) error {
 	// Collect all new issue labels
-	labels := *g.issueLabels
+	var labels gitlab.Labels = gitlab.Labels{}
+	labels = append(labels, *g.issueLabels...)
 	labels = append(labels, groupingLabels...)
 	labels = append(labels, g.extractDynamicLabels(msg)...)
 	options := &gitlab.CreateIssueOptions{
 		Title:       gitlab.String(fmt.Sprintf("Firing alert `%s`", msg.CommonLabels["alertname"])),
 		Description: gitlab.String(issueText.String()),
-		Labels:      labels,
+		Labels:      &labels,
 	}
 
 	createdIssue, response, err := g.client.Issues.CreateIssue(g.projectId, options)
@@ -207,11 +209,11 @@ func (g *Gitlab) increaseAppendLabel(labels []string) []string {
 }
 
 func (g *Gitlab) updateGitlabIssue(issue *gitlab.Issue, issueText *bytes.Buffer) error {
-	newLabels := g.increaseAppendLabel(issue.Labels)
+	newLabels := gitlab.Labels(g.increaseAppendLabel(issue.Labels))
 	options := &gitlab.UpdateIssueOptions{
 		// Concat original description with the new rendered template separated by `Appended on <date>` statement
 		Description: gitlab.String(fmt.Sprintf("%s\n\n&nbsp;\n\n&nbsp;\n\n&nbsp;\n\n_Appended on `%s`_\n%s", issue.Description, time.Now().Local(), issueText.String())),
-		Labels:      newLabels,
+		Labels:      &newLabels,
 	}
 	issue, response, err := g.client.Issues.UpdateIssue(g.projectId, issue.IID, options)
 	if err != nil {

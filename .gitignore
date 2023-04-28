@@ -20,4 +20,4 @@ dist/
 
 /conf/*.token
 /prometheus-gitlab-notifier/cmd/prometheus-gitlab-notifier
-
+prometheus-gitlab-notifier
