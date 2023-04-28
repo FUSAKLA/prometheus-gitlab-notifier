@@ -23,8 +23,8 @@ import (
 )
 
 // NewInRouter returns new Prober which registers its endpoints in the Router to provide readiness and liveness endpoints.
-func NewInRouter(logger log.FieldLogger, router *mux.Router) *prober {
-	p := &prober{
+func NewInRouter(logger log.FieldLogger, router *mux.Router) *Prober {
+	p := &Prober{
 		logger:      logger,
 		serverReady: nil,
 	}
@@ -32,29 +32,29 @@ func NewInRouter(logger log.FieldLogger, router *mux.Router) *prober {
 	return p
 }
 
-// prober holds application readiness/liveness status and provides handlers for reporting it.
-type prober struct {
+// Prober holds application readiness/liveness status and provides handlers for reporting it.
+type Prober struct {
 	logger         log.FieldLogger
 	serverReadyMtx sync.RWMutex
 	serverReady    error
 }
 
-func (p *prober) registerInRouter(router *mux.Router) {
+func (p *Prober) registerInRouter(router *mux.Router) {
 	router.HandleFunc("/liveness", p.livenessHandler)
 	router.HandleFunc("/readiness", p.readinessHandler)
 }
 
-func (p *prober) livenessHandler(w http.ResponseWriter, r *http.Request) {
+func (p *Prober) livenessHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = io.WriteString(w, `OK`)
 }
 
-func (p *prober) writeFailedReadiness(w http.ResponseWriter, err error) {
+func (p *Prober) writeFailedReadiness(w http.ResponseWriter, err error) {
 	p.logger.WithField("err", err).Error("readiness probe failed")
 	http.Error(w, err.Error(), http.StatusServiceUnavailable)
 }
 
-func (p *prober) readinessHandler(w http.ResponseWriter, r *http.Request) {
+func (p *Prober) readinessHandler(w http.ResponseWriter, _ *http.Request) {
 	if err := p.isReady(); err != nil {
 		p.writeFailedReadiness(w, err)
 		return
@@ -64,14 +64,14 @@ func (p *prober) readinessHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SetServerNotReady sets the readiness probe to invalid state.
-func (p *prober) SetServerNotReady(err error) {
+func (p *Prober) SetServerNotReady(err error) {
 	p.serverReadyMtx.Lock()
 	defer p.serverReadyMtx.Unlock()
 	p.logger.WithField("reason", err).Warn("Marking server as not ready")
 	p.serverReady = err
 }
 
-func (p *prober) isReady() error {
+func (p *Prober) isReady() error {
 	p.serverReadyMtx.RLock()
 	defer p.serverReadyMtx.RUnlock()
 	return p.serverReady

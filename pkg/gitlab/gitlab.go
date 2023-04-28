@@ -31,7 +31,7 @@ import (
 )
 
 // New creates new Gitlab instance configured to work with specified gitlab instance, project and with given authentication.
-func New(logger log.FieldLogger, url string, token string, projectId int, issueTemplate *template.Template, issueLabels *[]string, dynamicIssueLabels *[]string, groupInterval *time.Duration) (*Gitlab, error) {
+func New(logger log.FieldLogger, url string, token string, projectID int, issueTemplate *template.Template, issueLabels *[]string, dynamicIssueLabels *[]string, groupInterval *time.Duration) (*Gitlab, error) {
 	cli, err := gitlab.NewClient(token, gitlab.WithBaseURL(url))
 	if err != nil {
 		logger.WithFields(log.Fields{"err": err}).Error("failed to create Gitlab client")
@@ -39,7 +39,7 @@ func New(logger log.FieldLogger, url string, token string, projectId int, issueT
 	}
 	g := &Gitlab{
 		client:             cli,
-		projectId:          projectId,
+		projectID:          projectID,
 		issueTemplate:      issueTemplate,
 		issueLabels:        issueLabels,
 		dynamicIssueLabels: dynamicIssueLabels,
@@ -56,7 +56,7 @@ func New(logger log.FieldLogger, url string, token string, projectId int, issueT
 // Gitlab holds configured Gitlab client and provides API for creating templated issue from the Webhook.
 type Gitlab struct {
 	client             *gitlab.Client
-	projectId          int
+	projectID          int
 	issueTemplate      *template.Template
 	issueLabels        *[]string
 	dynamicIssueLabels *[]string
@@ -169,7 +169,7 @@ func (g *Gitlab) createGitlabIssue(msg *alertmanager.Webhook, groupingLabels []s
 		Labels:      &labels,
 	}
 
-	createdIssue, response, err := g.client.Issues.CreateIssue(g.projectId, options)
+	createdIssue, response, err := g.client.Issues.CreateIssue(g.projectID, options)
 	if err != nil {
 		metrics.ReportError("FailedToCreateGitlabIssue", "gitlab")
 		g.logger.WithFields(log.Fields{"err": err, "response": response}).Error("failed to create gitlab issue")
@@ -215,7 +215,7 @@ func (g *Gitlab) updateGitlabIssue(issue *gitlab.Issue, issueText *bytes.Buffer)
 		Description: gitlab.String(fmt.Sprintf("%s\n\n&nbsp;\n\n&nbsp;\n\n&nbsp;\n\n_Appended on `%s`_\n%s", issue.Description, time.Now().Local(), issueText.String())),
 		Labels:      &newLabels,
 	}
-	issue, response, err := g.client.Issues.UpdateIssue(g.projectId, issue.IID, options)
+	issue, response, err := g.client.Issues.UpdateIssue(g.projectID, issue.IID, options)
 	if err != nil {
 		metrics.ReportError("FailedToUpdateGitlabIssue", "gitlab")
 		g.logger.WithFields(log.Fields{"err": err, "response": response}).Error("failed to update gitlab issue, will try to create new")
@@ -252,10 +252,7 @@ func (g *Gitlab) CreateIssue(msg *alertmanager.Webhook) error {
 		}
 	}
 	// Try to create a new issue rather than discarding it after failed update.
-	if err := g.createGitlabIssue(msg, groupingLabels, issueText); err != nil {
-		return err
-	}
-	return nil
+	return g.createGitlabIssue(msg, groupingLabels, issueText)
 }
 
 func (g *Gitlab) ping() error {

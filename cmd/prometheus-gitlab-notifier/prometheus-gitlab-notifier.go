@@ -16,7 +16,6 @@ package main
 import (
 	"context"
 	_ "embed"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
@@ -39,10 +38,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func setupLogger(debug bool, logJson bool) log.FieldLogger {
+func setupLogger(debug bool, logJSON bool) log.FieldLogger {
 	l := log.New()
 	l.SetOutput(os.Stdout)
-	if logJson {
+	if logJSON {
 		l.SetFormatter(&log.JSONFormatter{})
 	}
 	if debug {
@@ -88,11 +87,11 @@ func startServer(logger log.FieldLogger, r http.Handler) (*http.Server, <-chan e
 var (
 	app                  = kingpin.New("prometheus-gitlab-notifier", "Web server listening for webhooks of alertmanager and creating an issue in Gitlab based on it.")
 	debug                = app.Flag("debug", "Enables debug logging.").Bool()
-	logJson              = app.Flag("log.json", "Log in JSON format").Bool()
+	logJSON              = app.Flag("log.json", "Log in JSON format").Bool()
 	serverAddr           = app.Flag("server.addr", "Allows to change the address and port at which the server will listen for incoming connections.").Default("0.0.0.0:9629").String()
 	gitlabURL            = app.Flag("gitlab.url", "URL of the Gitlab API.").Default("https://gitlab.com").String()
 	gitlabTokenFile      = app.Flag("gitlab.token.file", "Path to file containing gitlab token.").Required().ExistingFile()
-	projectId            = app.Flag("project.id", "Id of project where to create the issues.").Required().Int()
+	projectID            = app.Flag("project.id", "Id of project where to create the issues.").Required().Int()
 	groupInterval        = app.Flag("group.interval", "Duration how long back to check for opened issues with the same group labels to append the new alerts to (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').").Default("1h").Duration()
 	issueLabels          = app.Flag("issue.label", "Labels to add to the created issue. (Can be passed multiple times)").Strings()
 	dynamicIssueLabels   = app.Flag("dynamic.issue.label.name", "Alert label, which is to be propagated to the resulting Gitlab issue as scoped label if present in the received alert. (Can be passed multiple times)").Strings()
@@ -111,7 +110,7 @@ func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	// Initiate logging.
-	logger := setupLogger(*debug, *logJson)
+	logger := setupLogger(*debug, *logJSON)
 
 	tpl := template.New("base").Funcs(template.FuncMap(sprig.FuncMap()))
 
@@ -130,7 +129,7 @@ func main() {
 		logger.WithFields(log.Fields{"err": err, "file": issueTemplatePath}).Error("invalid gitlab issue template")
 		os.Exit(1)
 	}
-	token, err := ioutil.ReadFile(*gitlabTokenFile)
+	token, err := os.ReadFile(*gitlabTokenFile)
 	if err != nil {
 		logger.WithFields(log.Fields{"err": err, "file": gitlabTokenFile}).Error("failed to read token file")
 		os.Exit(1)
@@ -139,7 +138,7 @@ func main() {
 		logger.WithField("component", "gitlab"),
 		*gitlabURL,
 		strings.TrimSpace(string(token)),
-		*projectId,
+		*projectID,
 		gitlabIssueTextTemplate,
 		issueLabels,
 		dynamicIssueLabels,
@@ -160,7 +159,7 @@ func main() {
 	// Setup routing for HTTP server.
 	r := mux.NewRouter()
 	// Initialize the main API.
-	webhookApi := api.NewInRouter(
+	webhookAPI := api.NewInRouter(
 		logger.WithField("component", "api"),
 		r.PathPrefix("/api").Subrouter(),
 		alertChan,
@@ -196,7 +195,7 @@ func main() {
 			logger.WithField("duration", gracefulShutdownWait).Info("waiting for graceful shutdown")
 			time.Sleep(*gracefulShutdownWait)
 			// Stop receiving new alerts.
-			webhookApi.Close()
+			webhookAPI.Close()
 			// Wait for all enqueued alerts to be processed.
 			waitForEmptyChannel(logger, alertChan)
 			os.Exit(0)

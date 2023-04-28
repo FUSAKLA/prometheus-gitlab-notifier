@@ -39,19 +39,19 @@ func init() {
 	prometheus.MustRegister(retryCount)
 }
 
-// New returns new processor which handles the alert queue and retrying.
-func New(logger log.FieldLogger) *processor {
-	return &processor{
+// New returns new Processor which handles the alert queue and retrying.
+func New(logger log.FieldLogger) *Processor {
+	return &Processor{
 		logger: logger,
 	}
 }
 
-type processor struct {
+type Processor struct {
 	logger log.FieldLogger
 }
 
 // Process processes alerts from the given channel and creates Gitlab issues from them.
-func (p *processor) Process(ctx context.Context, gitlab *gitlab.Gitlab, alertChannel chan *alertmanager.Webhook, retryLimit int, retryBackoff time.Duration) {
+func (p *Processor) Process(ctx context.Context, gitlab *gitlab.Gitlab, alertChannel chan *alertmanager.Webhook, retryLimit int, retryBackoff time.Duration) {
 	doneChannel := make(chan bool, 1)
 	go func() {
 		defer close(doneChannel)

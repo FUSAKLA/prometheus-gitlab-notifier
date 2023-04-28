@@ -28,8 +28,8 @@ import (
 )
 
 // NewInRouter creates new Api instance which will register it's handlers in the given router.
-func NewInRouter(logger log.FieldLogger, r *mux.Router, ch chan<- *alertmanager.Webhook) *Api {
-	api := &Api{
+func NewInRouter(logger log.FieldLogger, r *mux.Router, ch chan<- *alertmanager.Webhook) *API {
+	api := &API{
 		logger:        logger,
 		alertChan:     ch,
 		receiveAlerts: true,
@@ -38,19 +38,19 @@ func NewInRouter(logger log.FieldLogger, r *mux.Router, ch chan<- *alertmanager.
 	return api
 }
 
-// Api defines handler functions for receiving Alertmanager endpoints.
-type Api struct {
+// API defines handler functions for receiving Alertmanager endpoints.
+type API struct {
 	logger           log.FieldLogger
 	alertChan        chan<- *alertmanager.Webhook
 	receiveAlerts    bool
 	receiveAlertsMtx sync.RWMutex
 }
 
-func (a *Api) registerHandlers(router *mux.Router) {
+func (a *API) registerHandlers(router *mux.Router) {
 	router.HandleFunc("/alertmanager", a.webhookHandler)
 }
 
-func (a *Api) webhookHandler(w http.ResponseWriter, r *http.Request) {
+func (a *API) webhookHandler(w http.ResponseWriter, r *http.Request) {
 	if !a.canReceiveAlerts() {
 		http.Error(w, "Server is not receiving new alerts.", http.StatusServiceUnavailable)
 		return
@@ -71,14 +71,14 @@ func (a *Api) webhookHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Close disabled receiving of new alerts in the API used mainly for graceful shutdown.
-func (a *Api) Close() {
+func (a *API) Close() {
 	a.receiveAlertsMtx.Lock()
 	defer a.receiveAlertsMtx.Unlock()
 	a.receiveAlerts = false
 	close(a.alertChan)
 }
 
-func (a *Api) canReceiveAlerts() bool {
+func (a *API) canReceiveAlerts() bool {
 	a.receiveAlertsMtx.RLock()
 	defer a.receiveAlertsMtx.RUnlock()
 	return a.receiveAlerts
