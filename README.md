@@ -1,6 +1,6 @@
 # Prometheus Gitlab Notifier
 
-[![Build](https://img.shields.io/github/checks-status/fusakla/prometheus-gitlab-notifier/master)](https://github.com/FUSAKLA/prometheus-gitlab-notifier/actions)
+[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/fusakla/prometheus-gitlab-notifier/go.yml)](https://github.com/FUSAKLA/prometheus-gitlab-notifier/actions)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/fusakla/prometheus-gitlab-notifier)](CHANGELOG.md)
 [![Docker Pulls](https://img.shields.io/docker/pulls/fusakla/prometheus-gitlab-notifier)](https://cloud.docker.com/repository/docker/fusakla/prometheus-gitlab-notifier)
 
