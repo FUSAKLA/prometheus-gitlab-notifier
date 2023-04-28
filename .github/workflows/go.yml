@@ -2,7 +2,11 @@ name: Go
 
 on:
   push:
-    branches: [ main ]
+    tags:
+      - v*
+    branches:
+      - master
+      - main
   pull_request:
 
 jobs:
