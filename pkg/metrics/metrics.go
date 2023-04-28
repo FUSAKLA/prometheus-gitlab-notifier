@@ -16,6 +16,7 @@ package metrics
 import (
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -30,14 +31,14 @@ var (
 
 	registry     *prometheus.Registry
 	errorsTotal  *prometheus.CounterVec
-	appBuildInfo *prometheus.CounterVec
+	appBuildInfo *prometheus.GaugeVec
 )
 
 func init() {
 	registry = prometheus.NewRegistry()
 
 	// Metric with information about build AppVersion, golang AppVersion etc/
-	appBuildInfo = prometheus.NewCounterVec(prometheus.CounterOpts{
+	appBuildInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "app_build_info",
 		Help: "Metadata metric with info about build and AppVersion.",
 	}, []string{"app", "version", "revision", "branch", "tag"})
@@ -52,8 +53,8 @@ func init() {
 	registry.MustRegister(errorsTotal)
 
 	// When using custom registry we need to explicitly register the Go and process collectors.
-	registry.MustRegister(prometheus.NewGoCollector())
-	registry.MustRegister(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{}))
+	registry.MustRegister(collectors.NewGoCollector())
+	registry.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
 
 }
 
