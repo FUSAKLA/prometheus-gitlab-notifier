@@ -27,7 +27,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// NewInRouter creates new Api instance which will register it's handlers in the given router.
+// NewInRouter creates new API instance which will register its handlers in the given router.
 func NewInRouter(logger log.FieldLogger, r *mux.Router, ch chan<- *alertmanager.Webhook) *API {
 	api := &API{
 		logger:        logger,
