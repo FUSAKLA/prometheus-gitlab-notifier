@@ -1,6 +1,9 @@
 
 ## Unreleased
 
+## 1.3.0 / 2023-05-02
+- Dropped vertical space added when appending issue, can be done in template if needed.
+
 ## 1.2.0 / 2023-04-28
 ### Changed
 - Upgraded all dependencies
