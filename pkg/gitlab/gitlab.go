@@ -212,7 +212,7 @@ func (g *Gitlab) updateGitlabIssue(issue *gitlab.Issue, issueText *bytes.Buffer)
 	newLabels := gitlab.Labels(g.increaseAppendLabel(issue.Labels))
 	options := &gitlab.UpdateIssueOptions{
 		// Concat original description with the new rendered template separated by `Appended on <date>` statement
-		Description: gitlab.String(fmt.Sprintf("%s\n\n&nbsp;\n\n&nbsp;\n\n&nbsp;\n\n_Appended on `%s`_\n%s", issue.Description, time.Now().Local(), issueText.String())),
+		Description: gitlab.String(fmt.Sprintf("%s\n\n_Appended on `%s`_\n%s", issue.Description, time.Now().Local(), issueText.String())),
 		Labels:      &newLabels,
 	}
 	issue, response, err := g.client.Issues.UpdateIssue(g.projectID, issue.IID, options)
