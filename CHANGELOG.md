@@ -1,8 +1,9 @@
 
 ## Unreleased
 
-## 1.4.0 / 2023-10-13
-- Added --append.use.issue.labels
+## 2.0.0 / 2023-10-13
+- Major behaviour change: the labels configured via --issue.label are now used
+  when searching for the issue to append to
 - Upgraded all dependencies
 
 ## 1.3.0 / 2023-05-02

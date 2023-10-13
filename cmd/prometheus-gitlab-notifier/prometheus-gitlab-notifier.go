@@ -85,22 +85,21 @@ func startServer(logger log.FieldLogger, r http.Handler) (*http.Server, <-chan e
 }
 
 var (
-	app                         = kingpin.New("prometheus-gitlab-notifier", "Web server listening for webhooks of alertmanager and creating an issue in Gitlab based on it.")
-	debug                       = app.Flag("debug", "Enables debug logging.").Bool()
-	logJSON                     = app.Flag("log.json", "Log in JSON format").Bool()
-	serverAddr                  = app.Flag("server.addr", "Allows to change the address and port at which the server will listen for incoming connections.").Default("0.0.0.0:9629").String()
-	gitlabURL                   = app.Flag("gitlab.url", "URL of the Gitlab API.").Default("https://gitlab.com").String()
-	gitlabTokenFile             = app.Flag("gitlab.token.file", "Path to file containing gitlab token.").Required().ExistingFile()
-	projectID                   = app.Flag("project.id", "Id of project where to create the issues.").Required().Int()
-	groupInterval               = app.Flag("group.interval", "Duration how long back to check for opened issues with the same group labels to append the new alerts to (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').").Default("1h").Duration()
-	issueLabels                 = app.Flag("issue.label", "Labels to add to the created issue. (Can be passed multiple times)").Strings()
-	dynamicIssueLabels          = app.Flag("dynamic.issue.label.name", "Alert label, which is to be propagated to the resulting Gitlab issue as scoped label if present in the received alert. (Can be passed multiple times)").Strings()
-	issueTemplatePath           = app.Flag("issue.template", "Path to the issue golang template file.").ExistingFile()
-	queueSizeLimit              = app.Flag("queue.size.limit", "Limit of the alert queue size.").Default("100").Int()
-	retryBackoff                = app.Flag("retry.backoff", "Duration how long to wait till next retry (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').").Default("5m").Duration()
-	retryLimit                  = app.Flag("retry.limit", "Maximum number of retries for single alert. If exceeded it's thrown away.").Default("5").Int()
-	gracefulShutdownWait        = app.Flag("graceful.shutdown.wait.duration", "Duration how long to wait on graceful shutdown marked as not ready (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').").Default("30s").Duration()
-	useIssueLabelsWhenAppending = app.Flag("append.use.issue.labels", "When searching for the issue to append to, include labels from --issue.label in the criteria.").Bool()
+	app                  = kingpin.New("prometheus-gitlab-notifier", "Web server listening for webhooks of alertmanager and creating an issue in Gitlab based on it.")
+	debug                = app.Flag("debug", "Enables debug logging.").Bool()
+	logJSON              = app.Flag("log.json", "Log in JSON format").Bool()
+	serverAddr           = app.Flag("server.addr", "Allows to change the address and port at which the server will listen for incoming connections.").Default("0.0.0.0:9629").String()
+	gitlabURL            = app.Flag("gitlab.url", "URL of the Gitlab API.").Default("https://gitlab.com").String()
+	gitlabTokenFile      = app.Flag("gitlab.token.file", "Path to file containing gitlab token.").Required().ExistingFile()
+	projectID            = app.Flag("project.id", "Id of project where to create the issues.").Required().Int()
+	groupInterval        = app.Flag("group.interval", "Duration how long back to check for opened issues with the same group labels to append the new alerts to (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').").Default("1h").Duration()
+	issueLabels          = app.Flag("issue.label", "Labels to add to the created issue. (Can be passed multiple times)").Strings()
+	dynamicIssueLabels   = app.Flag("dynamic.issue.label.name", "Alert label, which is to be propagated to the resulting Gitlab issue as scoped label if present in the received alert. (Can be passed multiple times)").Strings()
+	issueTemplatePath    = app.Flag("issue.template", "Path to the issue golang template file.").ExistingFile()
+	queueSizeLimit       = app.Flag("queue.size.limit", "Limit of the alert queue size.").Default("100").Int()
+	retryBackoff         = app.Flag("retry.backoff", "Duration how long to wait till next retry (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').").Default("5m").Duration()
+	retryLimit           = app.Flag("retry.limit", "Maximum number of retries for single alert. If exceeded it's thrown away.").Default("5").Int()
+	gracefulShutdownWait = app.Flag("graceful.shutdown.wait.duration", "Duration how long to wait on graceful shutdown marked as not ready (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').").Default("30s").Duration()
 )
 
 //go:embed default_issue.tmpl
@@ -144,7 +143,6 @@ func main() {
 		issueLabels,
 		dynamicIssueLabels,
 		groupInterval,
-		*useIssueLabelsWhenAppending,
 	)
 	if err != nil {
 		logger.WithField("err", err).Error("invalid gitlab configuration")

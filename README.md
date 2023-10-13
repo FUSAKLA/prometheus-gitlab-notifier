@@ -42,7 +42,6 @@ Flags:
   --retry.limit=5                Maximum number of retries for single alert. If exceeded it's thrown away.
   --graceful.shutdown.wait.duration=30s  
                                  Duration how long to wait on graceful shutdown marked as not ready (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').
-  --append.use.issue.labels      When searching for the issue to append to, include labels from --issue.label in the criteria.
 ```
 
 To test it is running check logs or http://0.0.0.0:9629/readiness
