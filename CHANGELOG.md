@@ -1,6 +1,11 @@
 
 ## Unreleased
 
+## 2.0.0 / 2023-10-13
+- Major behaviour change: the labels configured via --issue.label are now used
+  when searching for the issue to append to
+- Upgraded all dependencies
+
 ## 1.3.0 / 2023-05-02
 - Dropped vertical space added when appending issue, can be done in template if needed.
 

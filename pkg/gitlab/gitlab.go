@@ -229,6 +229,7 @@ func (g *Gitlab) updateGitlabIssue(issue *gitlab.Issue, issueText *bytes.Buffer)
 func (g *Gitlab) CreateIssue(msg *alertmanager.Webhook) error {
 	// Extract grouping labels from the message
 	groupingLabels := g.extractGroupingLabels(msg)
+	groupingLabels = append(groupingLabels, *g.issueLabels...)
 
 	// Check for existing issues with same grouping labels
 	matchingIssues, err := g.getOpenIssuesSince(groupingLabels, g.getTimeBefore(g.groupInterval))
