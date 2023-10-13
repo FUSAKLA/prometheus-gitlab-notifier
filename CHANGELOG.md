@@ -1,6 +1,10 @@
 
 ## Unreleased
 
+## 1.4.0 / 2023-10-13
+- Added --append.use.issue.labels
+- Upgraded all dependencies
+
 ## 1.3.0 / 2023-05-02
 - Dropped vertical space added when appending issue, can be done in template if needed.
 
