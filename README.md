@@ -17,15 +17,17 @@ For new features or changes check out the [CHANGELOG.md](./CHANGELOG.md)
 ### How to run it
 ```
 $ ./prometheus-gitlab-notifier --help
-usage: prometheus-gitlab-notifier --gitlab.url=GITLAB.URL --gitlab.token.file=GITLAB.TOKEN.FILE --project.id=PROJECT.ID [<flags>]
+usage: prometheus-gitlab-notifier --gitlab.token.file=GITLAB.TOKEN.FILE --project.id=PROJECT.ID [<flags>]
 
 Web server listening for webhooks of alertmanager and creating an issue in Gitlab based on it.
 
 Flags:
   --help                         Show context-sensitive help (also try --help-long and --help-man).
   --debug                        Enables debug logging.
+  --log.json                     Log in JSON format
   --server.addr="0.0.0.0:9629"   Allows to change the address and port at which the server will listen for incoming connections.
-  --gitlab.url=GITLAB.URL        URL of the Gitlab API.
+  --gitlab.url="https://gitlab.com"
+                                 URL of the Gitlab API.
   --gitlab.token.file=GITLAB.TOKEN.FILE  
                                  Path to file containing gitlab token.
   --project.id=PROJECT.ID        Id of project where to create the issues.
@@ -33,13 +35,14 @@ Flags:
   --issue.label=ISSUE.LABEL ...  Labels to add to the created issue. (Can be passed multiple times)
   --dynamic.issue.label.name=DYNAMIC.ISSUE.LABEL.NAME ...  
                                  Alert label, which is to be propagated to the resulting Gitlab issue as scoped label if present in the received alert. (Can be passed multiple times)
-  --issue.template=conf/default_issue.tmpl  
+  --issue.template=ISSUE.TEMPLATE
                                  Path to the issue golang template file.
   --queue.size.limit=100         Limit of the alert queue size.
   --retry.backoff=5m             Duration how long to wait till next retry (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').
   --retry.limit=5                Maximum number of retries for single alert. If exceeded it's thrown away.
   --graceful.shutdown.wait.duration=30s  
                                  Duration how long to wait on graceful shutdown marked as not ready (go duration syntax allowing 'ns', 'us' , 'ms', 's', 'm', 'h').
+  --append.use.issue.labels      When searching for the issue to append to, include labels from --issue.label in the criteria.
 ```
 
 To test it is running check logs or http://0.0.0.0:9629/readiness

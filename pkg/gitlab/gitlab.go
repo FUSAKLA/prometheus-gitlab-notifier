@@ -31,20 +31,21 @@ import (
 )
 
 // New creates new Gitlab instance configured to work with specified gitlab instance, project and with given authentication.
-func New(logger log.FieldLogger, url string, token string, projectID int, issueTemplate *template.Template, issueLabels *[]string, dynamicIssueLabels *[]string, groupInterval *time.Duration) (*Gitlab, error) {
+func New(logger log.FieldLogger, url string, token string, projectID int, issueTemplate *template.Template, issueLabels *[]string, dynamicIssueLabels *[]string, groupInterval *time.Duration, useIssueLabelsWhenAppending bool) (*Gitlab, error) {
 	cli, err := gitlab.NewClient(token, gitlab.WithBaseURL(url))
 	if err != nil {
 		logger.WithFields(log.Fields{"err": err}).Error("failed to create Gitlab client")
 		return nil, err
 	}
 	g := &Gitlab{
-		client:             cli,
-		projectID:          projectID,
-		issueTemplate:      issueTemplate,
-		issueLabels:        issueLabels,
-		dynamicIssueLabels: dynamicIssueLabels,
-		groupInterval:      groupInterval,
-		logger:             logger,
+		client:                      cli,
+		projectID:                   projectID,
+		issueTemplate:               issueTemplate,
+		issueLabels:                 issueLabels,
+		dynamicIssueLabels:          dynamicIssueLabels,
+		groupInterval:               groupInterval,
+		logger:                      logger,
+		useIssueLabelsWhenAppending: useIssueLabelsWhenAppending,
 	}
 	if err := g.ping(); err != nil {
 		logger.WithFields(log.Fields{"url": url, "err": err}).Error("msg", "cannot reach the Gitlab")
@@ -55,13 +56,14 @@ func New(logger log.FieldLogger, url string, token string, projectID int, issueT
 
 // Gitlab holds configured Gitlab client and provides API for creating templated issue from the Webhook.
 type Gitlab struct {
-	client             *gitlab.Client
-	projectID          int
-	issueTemplate      *template.Template
-	issueLabels        *[]string
-	dynamicIssueLabels *[]string
-	groupInterval      *time.Duration
-	logger             log.FieldLogger
+	client                      *gitlab.Client
+	projectID                   int
+	issueTemplate               *template.Template
+	issueLabels                 *[]string
+	dynamicIssueLabels          *[]string
+	groupInterval               *time.Duration
+	logger                      log.FieldLogger
+	useIssueLabelsWhenAppending bool
 }
 
 func (g *Gitlab) formatGitlabScopedLabel(key string, value string) string {
@@ -229,6 +231,9 @@ func (g *Gitlab) updateGitlabIssue(issue *gitlab.Issue, issueText *bytes.Buffer)
 func (g *Gitlab) CreateIssue(msg *alertmanager.Webhook) error {
 	// Extract grouping labels from the message
 	groupingLabels := g.extractGroupingLabels(msg)
+	if g.useIssueLabelsWhenAppending {
+		groupingLabels = append(groupingLabels, *g.issueLabels...)
+	}
 
 	// Check for existing issues with same grouping labels
 	matchingIssues, err := g.getOpenIssuesSince(groupingLabels, g.getTimeBefore(g.groupInterval))
